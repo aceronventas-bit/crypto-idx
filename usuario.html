@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CRYPTO IDX · Señales</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--green:#00c851;--red:#ff3547;--gold:#f5a623;--text:#fff;--text2:#aaa;--text3:#555;--border:#2a2a2a;--r:12px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+input,select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:15px;outline:none;width:100%;transition:border-color .2s}
+input:focus{border-color:var(--gold)}
+.btn{width:100%;padding:14px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .15s}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:active{transform:scale(.98)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px}
+.lbl{font-size:11px;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:.5px;text-transform:uppercase}
+.fg{margin-bottom:12px}
+.err{color:var(--red);font-size:12px;text-align:center;margin-top:6px;min-height:16px}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* LOGIN */
+#s-login{align-items:center;justify-content:center;padding:2rem;background:var(--bg)}
+.login-wrap{width:100%;max-width:320px}
+.logo-top{text-align:center;margin-bottom:2rem}
+.logo-bull{font-size:72px;filter:drop-shadow(0 0 20px rgba(245,166,35,.3))}
+.logo-name{font-size:28px;font-weight:800;color:var(--gold);letter-spacing:3px;margin-top:4px}
+.logo-sub{font-size:11px;color:var(--text2);letter-spacing:1.5px;margin-top:2px}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem}
+
+/* PENDING */
+#s-pending{align-items:center;justify-content:center;padding:2rem;text-align:center;flex-direction:column;gap:14px}
+
+/* APP */
+#s-app{background:var(--bg)}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.hdr-logo{font-size:15px;font-weight:800;color:var(--gold);letter-spacing:1px}
+.hdr-pill{font-size:10px;color:var(--text2);background:var(--bg3);padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
+.live-clock{font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums}
+.out-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 11px;border-radius:6px;font-size:12px;cursor:pointer}
+.date-bar{background:var(--bg3);padding:7px 14px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.date-bar b{color:var(--text)}
+.filters{display:flex;gap:5px;padding:10px 10px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.filters::-webkit-scrollbar{display:none}
+.chip{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2);white-space:nowrap;flex-shrink:0;letter-spacing:.3px}
+.chip.on{background:var(--gold);color:#000;border-color:var(--gold)}
+.sigs-wrap{flex:1;overflow-y:auto;padding:8px 10px 90px}
+.sigs-wrap::-webkit-scrollbar{width:3px}
+.sigs-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* SIGNAL CARDS */
+.sig-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:6px;position:relative;overflow:hidden;cursor:pointer;transition:opacity .15s}
+.sig-card:active{opacity:.8}
+.sig-card.buy{border-left:3px solid var(--green)}
+.sig-card.sell{border-left:3px solid var(--red)}
+.sig-card.dim{opacity:.4}
+.sig-card.now{background:var(--bg3);border-color:var(--gold)}
+.sig-time-col{min-width:52px}
+.sig-t{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.sig-utc{font-size:10px;color:var(--text3);margin-top:1px}
+.sig-mid{flex:1}
+.sig-pair{font-size:11px;color:var(--text2);letter-spacing:.5px}
+.sig-dir{font-size:14px;font-weight:800;letter-spacing:1px;margin-top:1px}
+.sig-dir.buy{color:var(--green)}
+.sig-dir.sell{color:var(--red)}
+.sig-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+.sig-dot.buy{background:var(--green);box-shadow:0 0 7px rgba(0,200,81,.5)}
+.sig-dot.sell{background:var(--red);box-shadow:0 0 7px rgba(255,53,71,.5)}
+.sig-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700;letter-spacing:.3px}
+.b-live{background:rgba(245,166,35,.2);color:var(--gold);border:1px solid rgba(245,166,35,.3)}
+.b-soon{background:rgba(245,166,35,.1);color:var(--gold)}
+.b-past{background:var(--bg3);color:var(--text3)}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3)}
+
+/* FULLSCREEN */
+#s-signal{position:relative}
+.sf-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;position:relative}
+.sf-wrap.buy-bg{background:#001a0d}
+.sf-wrap.sell-bg{background:#1a0007}
+.sf-back{position:absolute;top:1rem;left:1rem;background:rgba(255,255,255,.12);border:none;color:#fff;padding:8px 14px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+.sf-time{font-size:58px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:3px;line-height:1}
+.sf-tz{font-size:13px;color:rgba(255,255,255,.4);margin:4px 0 24px;letter-spacing:1px}
+.sf-dur{font-size:20px;font-weight:700;color:rgba(255,255,255,.65);margin-bottom:16px;letter-spacing:1px}
+.sf-btn{padding:18px 56px;border-radius:10px;font-size:30px;font-weight:900;letter-spacing:3px;border:none;color:#fff;cursor:default;margin-bottom:20px}
+.sf-btn.buy{background:var(--green)}
+.sf-btn.sell{background:var(--red)}
+.sf-pair{font-size:18px;color:rgba(255,255,255,.45);letter-spacing:3px}
+.sf-bull{font-size:70px;opacity:.1;position:absolute;bottom:1.5rem}
+
+/* BOTTOM NAV */
+.bnav{background:var(--bg2);border-top:1px solid var(--border);display:flex;position:sticky;bottom:0;z-index:100}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 0;cursor:pointer;color:var(--text3);gap:2px;border:none;background:transparent}
+.bni.on{color:var(--gold)}
+.bni-ico{font-size:20px}
+.bni-lbl{font-size:9px;letter-spacing:.5px;font-weight:700}
+
+/* PROFILE */
+.profile-wrap{flex:1;padding:16px;overflow-y:auto}
+.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-bottom:12px}
+.pf-avatar{width:56px;height:56px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--gold);margin-bottom:12px}
+.pf-name{font-size:20px;font-weight:700}
+.pf-code{font-size:14px;color:var(--text2);margin-top:2px}
+.pf-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pf-row:last-child{border-bottom:none}
+.pf-k{color:var(--text2)}
+.pf-v{color:var(--text);font-weight:600}
+
+/* REFRESH indicator */
+.refresh-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-left:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="screen active" id="s-login">
+  <div class="login-wrap">
+    <div class="logo-top">
+      <div class="logo-bull">🐂</div>
+      <div class="logo-name">CRYPTO IDX</div>
+      <div class="logo-sub">SIGNALS PLATFORM</div>
+    </div>
+    <div class="login-card">
+      <div class="fg"><label class="lbl">Código de acceso</label><input type="text" id="l-code" placeholder="Ej: 365816569" inputmode="numeric" autocomplete="username"></div>
+      <div class="fg"><label class="lbl">Contraseña</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn btn-gold" onclick="doLogin()">INGRESAR</button>
+      <div class="err" id="l-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div class="screen" id="s-pending" style="align-items:center;justify-content:center;padding:2rem;text-align:center;flex-direction:column;gap:14px">
+  <div style="font-size:60px">⏳</div>
+  <div style="font-size:20px;font-weight:700;color:var(--gold)">ACCESO PENDIENTE</div>
+  <div style="font-size:14px;color:var(--text2);max-width:260px;line-height:1.6">Tu solicitud está siendo revisada. El administrador activará tu cuenta pronto.</div>
+  <button class="btn btn-outline" style="max-width:180px" onclick="doLogout()">Cerrar sesión</button>
+</div>
+
+<!-- APP SEÑALES -->
+<div class="screen" id="s-app">
+  <div class="hdr">
+    <div class="hdr-left">
+      <span style="font-size:18px">🐂</span>
+      <div class="hdr-logo">CRYPTO IDX</div>
+      <div class="hdr-pill">SEÑALES<span class="refresh-dot"></span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="live-clock" id="clock">--:-- RD</div>
+      <button class="out-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+  <div class="date-bar">
+    <b id="date-lbl">Cargando...</b>
+    <span id="sig-count" style="color:var(--gold);font-size:12px"></span>
+  </div>
+  <div class="filters">
+    <div class="chip on" onclick="setFilter('all',this)">Todas</div>
+    <div class="chip" onclick="setFilter('buy',this)">🟢 Compra</div>
+    <div class="chip" onclick="setFilter('sell',this)">🔴 Venta</div>
+    <div class="chip" onclick="setFilter('soon',this)">Próximas</div>
+    <div class="chip" onclick="setFilter('past',this)">Pasadas</div>
+  </div>
+  <div class="sigs-wrap" id="sigs-wrap">
+    <div class="empty" id="empty-msg">
+      <div style="font-size:44px;margin-bottom:8px">📊</div>
+      <div style="font-size:14px">Sin señales para hoy</div>
+      <div style="font-size:12px;margin-top:4px">El admin publicará las señales del día</div>
+    </div>
+    <div id="sigs-list"></div>
+  </div>
+  <div class="bnav">
+    <button class="bni on" id="nav-s" onclick="navTo('app')">
+      <div class="bni-ico">📊</div><div class="bni-lbl">SEÑALES</div>
+    </button>
+    <button class="bni" id="nav-p" onclick="navTo('profile')">
+      <div class="bni-ico">👤</div><div class="bni-lbl">PERFIL</div>
+    </button>
+  </div>
+</div>
+
+<!-- APP PERFIL -->
+<div class="screen" id="s-profile">
+  <div class="hdr">
+    <div class="hdr-left"><span style="font-size:18px">🐂</span><div class="hdr-logo">CRYPTO IDX</div></div>
+    <button class="out-btn" onclick="doLogout()">Salir</button>
+  </div>
+  <div class="profile-wrap">
+    <div class="profile-card">
+      <div class="pf-avatar" id="pf-av">?</div>
+      <div class="pf-name" id="pf-nm">—</div>
+      <div class="pf-code" id="pf-cd">Código: —</div>
+    </div>
+    <div class="profile-card">
+      <div class="pf-row"><span class="pf-k">Estado</span><span class="pf-v" style="color:var(--green)">✅ Activo</span></div>
+      <div class="pf-row"><span class="pf-k">Plan</span><span class="pf-v" style="color:var(--gold)">CRYPTO IDX</span></div>
+      <div class="pf-row"><span class="pf-k">Señales hoy</span><span class="pf-v" id="pf-sigs">0</span></div>
+      <div class="pf-row"><span class="pf-k">Zona horaria</span><span class="pf-v">UTC-4 (RD)</span></div>
+    </div>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+  <div class="bnav">
+    <button class="bni" id="pnav-s" onclick="navTo('app')">
+      <div class="bni-ico">📊</div><div class="bni-lbl">SEÑALES</div>
+    </button>
+    <button class="bni on" id="pnav-p" onclick="navTo('profile')">
+      <div class="bni-ico">👤</div><div class="bni-lbl">PERFIL</div>
+    </button>
+  </div>
+</div>
+
+<!-- FULLSCREEN SEÑAL -->
+<div class="screen" id="s-signal">
+  <div class="sf-wrap" id="sf-wrap">
+    <button class="sf-back" onclick="goBack()">← Volver</button>
+    <div class="sf-time" id="sf-t">--:--</div>
+    <div class="sf-tz">Hora RD · UTC-4</div>
+    <div class="sf-dur">1 MIN.</div>
+    <div class="sf-btn" id="sf-b">COMPRA</div>
+    <div class="sf-pair">CRYPTO IDX</div>
+    <div class="sf-bull">🐂</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6GC2MYgYyjSZhTnbLqeqFjoXoUXkR4bg",
+  authDomain: "crypto-idx-signals.firebaseapp.com",
+  projectId: "crypto-idx-signals",
+  storageBucket: "crypto-idx-signals.firebasestorage.app",
+  messagingSenderId: "721925730638",
+  appId: "1:721925730638:web:85234f19a4741b29012e1f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── HELPERS ────────────────────────────────────────────────
+function utc5toRD(t){
+  const[h,m]=t.split(':').map(Number);
+  let r=h+1;if(r>=24)r-=24;
+  return `${String(r).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function getRD(){
+  const now=new Date();
+  const ms=now.getTime()+now.getTimezoneOffset()*60000+(-4*60*60000);
+  const d=new Date(ms);
+  return{
+    h:d.getHours(),m:d.getMinutes(),
+    str:`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+    dateStr:d.toLocaleDateString('es-DO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
+  };
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── STATE ──────────────────────────────────────────────────
+let CU=null;
+let allSignals=[];
+let filterMode='all';
+let prevScreen='s-app';
+let signalUnsub=null;
+
+// ── AUTH ───────────────────────────────────────────────────
+window.doLogin = async function(){
+  const code=document.getElementById('l-code').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const err=document.getElementById('l-err');
+  err.textContent='Verificando...';
+  try{
+    const snap=await getDoc(doc(db,'users',code));
+    if(!snap.exists()){err.textContent='Código incorrecto';return}
+    const u=snap.data();
+    if(u.pass!==pass){err.textContent='Contraseña incorrecta';return}
+    if(u.status==='blocked'){err.textContent='Tu cuenta fue bloqueada. Contacta al admin.';return}
+    if(u.role==='admin'){err.textContent='Usa el panel de administrador.';return}
+    CU={id:code,...u};
+    sessionStorage.setItem('userCode',code);
+    err.textContent='';
+    if(u.status==='pending'){showScreen('s-pending');return}
+    startApp();
+  }catch(e){err.textContent='Error de conexión. Revisa tu internet.'}
+};
+
+window.doLogout = function(){
+  CU=null;
+  if(signalUnsub) signalUnsub();
+  sessionStorage.removeItem('userCode');
+  showScreen('s-login');
+};
+
+const savedCode=sessionStorage.getItem('userCode');
+if(savedCode){
+  getDoc(doc(db,'users',savedCode)).then(snap=>{
+    if(!snap.exists())return;
+    const u=snap.data();
+    if(u.role==='admin'){sessionStorage.removeItem('userCode');return}
+    if(u.status==='blocked'){sessionStorage.removeItem('userCode');return}
+    CU={id:savedCode,...u};
+    if(u.status==='pending'){showScreen('s-pending');return}
+    startApp();
+  });
+}
+
+// ── APP ────────────────────────────────────────────────────
+function startApp(){
+  showScreen('s-app');
+  updateClock();
+  setInterval(updateClock,1000);
+  setInterval(renderSignals,30000);
+  // Escucha en tiempo real cambios de señales
+  signalUnsub=onSnapshot(doc(db,'signals','today'),snap=>{
+    if(snap.exists()){
+      allSignals=snap.data().list||[];
+    }else{
+      allSignals=[];
+    }
+    renderSignals();
+  });
+}
+
+function updateClock(){
+  const t=getRD();
+  const el=document.getElementById('clock');
+  if(el) el.textContent=t.str+' RD';
+}
+
+window.setFilter = function(f,el){
+  filterMode=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderSignals();
+};
+
+function renderSignals(){
+  const list=document.getElementById('sigs-list');
+  const empty=document.getElementById('empty-msg');
+  const dateEl=document.getElementById('date-lbl');
+  const cntEl=document.getElementById('sig-count');
+  const t=getRD();
+  if(dateEl) dateEl.textContent=t.dateStr;
+  if(!allSignals.length){empty.style.display='block';list.innerHTML='';if(cntEl)cntEl.textContent='';return}
+  empty.style.display='none';
+  const nowMins=t.h*60+t.m;
+  let data=allSignals.map(s=>{
+    const rd=utc5toRD(s.time);
+    const[sh,sm]=rd.split(':').map(Number);
+    const mins=sh*60+sm;
+    return{...s,rd,mins,diff:mins-nowMins};
+  });
+  if(filterMode==='buy') data=data.filter(s=>s.type==='buy');
+  else if(filterMode==='sell') data=data.filter(s=>s.type==='sell');
+  else if(filterMode==='soon') data=data.filter(s=>s.diff>0);
+  else if(filterMode==='past') data=data.filter(s=>s.diff<-4);
+  const buys=data.filter(s=>s.type==='buy').length;
+  const sells=data.filter(s=>s.type==='sell').length;
+  if(cntEl) cntEl.textContent=`${data.length} · 🟢${buys} 🔴${sells}`;
+  if(!data.length){empty.style.display='block';list.innerHTML='';return}
+  list.innerHTML=data.map(s=>{
+    const isNow=s.diff>=-4&&s.diff<=0;
+    const isFut=s.diff>0;
+    let badge='';
+    if(isNow) badge='<span class="sig-badge b-live">● EN VIVO</span>';
+    else if(isFut&&s.diff<=90) badge=`<span class="sig-badge b-soon">en ${Math.ceil(s.diff)}m</span>`;
+    else if(s.diff<-4) badge=`<span class="sig-badge b-past">${Math.abs(Math.floor(s.diff))}m</span>`;
+    return `<div class="sig-card ${s.type} ${isFut?'dim':''} ${isNow?'now':''}" onclick="openSig('${s.time}','${s.type}')">
+      <div class="sig-time-col">
+        <div class="sig-t">${s.rd}</div>
+        <div class="sig-utc">${s.time} UTC-5</div>
+      </div>
+      <div class="sig-mid">
+        <div class="sig-pair">CRYPTO IDX · 1 MIN</div>
+        <div class="sig-dir ${s.type}">${s.type==='buy'?'COMPRA':'VENTA'}</div>
+      </div>
+      <div class="sig-dot ${s.type}"></div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+
+window.openSig = function(time,type){
+  prevScreen=document.querySelector('.screen.active').id;
+  document.getElementById('sf-t').textContent=utc5toRD(time);
+  const btn=document.getElementById('sf-b');
+  btn.textContent=type==='buy'?'COMPRA':'VENTA';
+  btn.className='sf-btn '+type;
+  document.getElementById('sf-wrap').className='sf-wrap '+(type==='buy'?'buy-bg':'sell-bg');
+  showScreen('s-signal');
+};
+window.goBack = function(){showScreen(prevScreen)};
+
+window.navTo = function(tab){
+  if(tab==='app'){
+    showScreen('s-app');
+    document.getElementById('nav-s').classList.add('on');
+    document.getElementById('nav-p').classList.remove('on');
+  }else{
+    loadProfile();showScreen('s-profile');
+    document.getElementById('pnav-p').classList.add('on');
+    document.getElementById('pnav-s').classList.remove('on');
+  }
+};
+
+function loadProfile(){
+  if(!CU)return;
+  const ini=CU.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('pf-av').textContent=ini;
+  document.getElementById('pf-nm').textContent=CU.name;
+  document.getElementById('pf-cd').textContent='Código: '+CU.id+(CU.phone?' · '+CU.phone:'');
+  document.getElementById('pf-sigs').textContent=allSignals.length;
+}
+
+</script>
+</body>
+</html>
